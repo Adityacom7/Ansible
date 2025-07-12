@@ -1,0 +1,211 @@
+
+* One Bastion Host (Ansible control node) in a public subnet
+* Two Private App Servers (targets)
+* End-to-end Ansible playbook execution
+* Linting, syntax check, dry run, and CI/CD setup
+* GitHub integration
+
+---
+
+## ✅ Ansible Project on AWS — Full Implementation Plan
+
+---
+
+### 🧱 PHASE 1: Infrastructure Setup on AWS
+
+1. **Create a VPC** with:
+
+   * 1 public subnet (for bastion)
+   * 1 private subnet (for app servers)
+   * Internet Gateway attached to public subnet
+   * NAT Gateway (optional, for private instances to access internet)
+
+2. **Launch EC2 Instances**:
+
+   * Bastion Host: Public subnet, SSH port open to your IP
+   * App Server 1 & App Server 2: Private subnet, no public IPs
+
+3. **Security Groups**:
+
+   * Bastion SG: Allow SSH (22) from your IP
+   * App Servers SG: Allow SSH (22) from Bastion SG only
+
+4. **Key Pair**:
+
+   * Generate or use an existing SSH key pair (e.g., `aws-key.pem`)
+   * Use the same key for all three instances for simplicity
+
+---
+
+### 🖥️ PHASE 2: Bastion Host Configuration (Ansible Control Node)
+
+5. **SSH into Bastion**:
+
+   ```bash
+   ssh -i aws-key.pem ubuntu@<bastion-ip>
+   ```
+
+6. **Install Ansible & Git**:
+
+   ```bash
+   sudo apt update && sudo apt install -y ansible git
+   ```
+
+---
+
+### 📁 PHASE 3: Create Local Ansible Project Structure
+
+7. **Project Folder Structure**:
+
+   ```bash
+   ansible-aws-project/
+   ├── inventory/
+   │   └── hosts.ini
+   ├── playbooks/
+   │   ├── site.yml
+   │   └── roles/
+   │       └── common/
+   │           ├── tasks/main.yml
+   │           └── handlers/main.yml
+   ├── group_vars/
+   │   └── all.yml
+   ├── ansible.cfg
+   └── README.md
+   ```
+
+---
+
+### 📋 PHASE 4: Inventory & Config Files
+
+8. **Configure `ansible.cfg`**:
+
+   ```ini
+   [defaults]
+   inventory = ./inventory/hosts.ini
+   host_key_checking = False
+   ```
+
+9. **Create `inventory/hosts.ini`**:
+
+   ```ini
+   [app_servers]
+   app-server-1 ansible_host=<private-ip-1> ansible_user=ubuntu
+   app-server-2 ansible_host=<private-ip-2> ansible_user=ubuntu
+
+   [all:vars]
+   ansible_ssh_common_args='-o ProxyJump=ubuntu@<bastion-ip>'
+   ```
+
+---
+
+### 🛠️ PHASE 5: Ansible Role & Playbook
+
+10. **Create Role `roles/common/tasks/main.yml`**:
+
+```yaml
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: present
+    update_cache: yes
+
+- name: Start and enable Nginx
+  service:
+    name: nginx
+    state: started
+    enabled: true
+```
+
+11. **Create Playbook `playbooks/site.yml`**:
+
+```yaml
+- name: Configure app servers
+  hosts: app_servers
+  become: true
+  roles:
+    - common
+```
+
+---
+
+### 🧪 PHASE 6: Testing & Validation
+
+12. **Lint Playbook**:
+
+```bash
+ansible-lint playbooks/site.yml
+```
+
+13. **Syntax Check**:
+
+```bash
+ansible-playbook playbooks/site.yml --syntax-check
+```
+
+14. **Dry Run**:
+
+```bash
+ansible-playbook playbooks/site.yml --check --diff
+```
+
+15. **Run Actual Deployment**:
+
+```bash
+ansible-playbook playbooks/site.yml
+```
+
+16. **Verify Functionality**:
+
+```bash
+curl http://<private-ip-1>      # via bastion
+systemctl status nginx
+```
+
+---
+
+### 🔁 PHASE 7: GitHub Integration
+
+17. **Initialize Git Repo**:
+
+```bash
+git init
+git remote add origin https://github.com/<your-username>/ansible-aws-project.git
+git add .
+git commit -m "Initial commit"
+git push -u origin main
+```
+
+18. **Create GitHub Actions CI** (`.github/workflows/ansible-ci.yml`):
+
+```yaml
+name: Ansible CI Checks
+
+on: [push, pull_request]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Ansible
+        run: |
+          sudo apt update
+          sudo apt install -y ansible ansible-lint
+
+      - name: Lint Playbook
+        run: ansible-lint playbooks/site.yml
+
+      - name: Syntax Check
+        run: ansible-playbook playbooks/site.yml --syntax-check -i inventory/hosts.ini
+```
+
+---
+
+### ✅ Optional Enhancements
+
+* Add **Molecule** for role unit testing
+* Implement **Secrets Management** (Ansible Vault or AWS SSM)
+* Use **dynamic inventory** from AWS (`ec2.py`)
+* Implement **parameterized roles** with `group_vars` and templates
+* Add **idempotency testing** to ensure re-runs are clean
