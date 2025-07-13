@@ -1,0 +1,39 @@
+- name: Install prerequisites
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - software-properties-common
+    - gnupg
+
+- name: Add Docker GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker repo
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+    state: present
+
+- name: Install Docker
+  apt:
+    name: docker-ce
+    state: latest
+    update_cache: yes
+
+- name: Ensure Docker is running
+  service:
+    name: docker
+    state: started
+    enabled: true
+- name: Run a sample nginx container
+  docker_container:
+    name: webapp
+    image: nginx
+    ports:
+      - "80:80"
+    restart_policy: always

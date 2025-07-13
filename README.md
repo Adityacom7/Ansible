@@ -245,3 +245,46 @@ GitHub CI/CD	GitHub Actions YAML	All commits/PRs
 ![alt text](image-1.png)
 
 
+🔷 Breakdown of Playbook Components
+1. Play
+Each YAML file can contain one or more plays. A play maps a group of hosts to tasks.
+
+name: Optional label
+
+hosts: The group or host this play will run against (defined in inventory)
+
+become: Whether to use sudo/privilege escalation
+
+2. Tasks
+A list of actions to perform, executed in order. Each task typically uses a module (like apt, yum, copy, template, service).
+
+3. Modules
+Pre-built code Ansible uses to perform specific tasks (install packages, restart services, etc.)
+
+🔷 Example 1: Installing NGINX on Ubuntu Servers
+yaml
+Copy
+Edit
+---
+- name: Install and start NGINX
+  hosts: webservers
+  become: true
+
+  tasks:
+    - name: Install NGINX
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Ensure NGINX is running
+      service:
+        name: nginx
+        state: started
+        enabled: true
+Concepts Covered:
+Using apt module for package installation
+
+Using service module for managing systemd services
+
+become: true enables sudo
