@@ -1,0 +1,5 @@
+- name: Configure App Servers
+  hosts: app_servers
+  become: true  # Use sudo
+  roles:
+    - common
