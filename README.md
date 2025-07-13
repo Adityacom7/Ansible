@@ -238,3 +238,10 @@ Dry Run	ansible-playbook --check --diff	Pre-production testing
 Actual Apply	ansible-playbook	After dry run is clean
 Post Verification	curl, systemctl, or uri module	Post-deployment
 GitHub CI/CD	GitHub Actions YAML	All commits/PRs
+
+
+
+![alt text](image.png)
+![alt text](image-1.png)
+
+
